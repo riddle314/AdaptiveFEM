@@ -2,7 +2,7 @@
 % Start with the computation of the initial mesh, the solution u and the
 % error.
 startTime = posixtime(datetime('now'));
-numberOfMeshRefinements = 5;
+numberOfMeshRefinements = 2;
 [node, elem, bdFlag, p, e, t, domainDecomposedGeometryMatrix] = readInitialMeshDataAndBoundaryConditions(numberOfMeshRefinements);
 [A, u, b, areaForAllElements, f] = solvePDE(node, elem, bdFlag);
 
@@ -16,12 +16,12 @@ aPosterioriError
 % based on the error create the new adapted mesh and calculate the u and the error
 
 % minimumBoundaryOfAPosterioriError is the minimum error we want to achieve
-minimumBoundaryOfAPosterioriError = 0.3;
+minimumBoundaryOfAPosterioriError = 0.8;
 % percentageOfError is the percentage of the general error (aPosterioriError)
 % for which we will try to find the triangles with the biggest errors (errorPerTriangle)
 % that form it and we will refine them in order to shrink the general error
 % (aPosterioriError)
-percentageOfError = 0.26;
+percentageOfError = 0.2;
 while(aPosterioriError > minimumBoundaryOfAPosterioriError)
     indecesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError,...
         errorPerTriangle, percentageOfError);

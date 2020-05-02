@@ -36,7 +36,7 @@ function [b, u, freeNode] = findRightHandSide(node, elem, areaForAllElements, A,
       % We use accumarray([Neumann(:), ones(2*size(Neumann,1), 1)], repmat(edgeLength.*g_N(mid)/2,2,1),[N,1]) which gives you an N x 1 array,
       % with the element at index i to be the Neumman integral approximation based on middle point quadtrature at node i ( Sφi(x)g_N(x)dx ) on all Neumann boundary A_N, 
       % which is actualy the integral on 2 edges with the middle node to be the node i for example [i-1, i, i+1], 
-      % this is because φi(x) is 0 on every other x that belongs to differnet edges other than [i-1, i, i+1].
+      % this is because φi(x) is 0 on every other x that belongs to different edges other than [i-1, i, i+1].
       % The repmat(edgeLength.*g_N(mid)/2,2,1) gives you an 2*M x 1 array.
       b = b + accumarray([Neumann(:), ones(2*size(Neumann,1), 1)], repmat(edgeLength.*g_N(mid)/2,2,1),[N,1]);
   end

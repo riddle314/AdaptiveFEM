@@ -1,6 +1,6 @@
 %Here we read the mesh data and boundary conditions based on a
 %initial refinement
-function [node, elem, bdFlag, p , e, t, domainDecomposedGeometryMatrix] = readInitialMeshDataAndBoundaryConditions(numberOfMeshRefinements)
+function [node, elem, bdFlag, p, e, t, domainDecomposedGeometryMatrix] = readInitialMeshDataAndBoundaryConditions(numberOfMeshRefinements)
 
 domainDecomposedGeometryMatrix = readDomain();
 
