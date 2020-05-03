@@ -1,4 +1,4 @@
-% Solve the PDE for the triangulation given for the problem.
+% Solve the PDE with an adaptive Finite Element Method.
 % Start with the computation of the initial mesh, the solution u and the
 % error.
 startTime = posixtime(datetime('now'));
