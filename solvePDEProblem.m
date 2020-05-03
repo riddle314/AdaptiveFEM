@@ -13,16 +13,18 @@ subplot(2,3,5), pdemesh(p,e,t,u)
 % find the initial error and error per triangle for the initial mesh
 [aPosterioriError, errorPerTriangle] = calculateAPosterioriError(node, elem, areaForAllElements, u, f);
 aPosterioriError
-% based on the error create the new adapted mesh and calculate the u and the error
 
 % minimumBoundaryOfAPosterioriError is the minimum error we want to achieve
 minimumBoundaryOfAPosterioriError = 0.8;
+
 % percentageOfError is the percentage of the general error (aPosterioriError)
 % for which we will try to find the triangles with the biggest errors (errorPerTriangle)
 % that form it and we will refine them in order to shrink the general error
 % (aPosterioriError)
 percentageOfError = 0.2;
-while(aPosterioriError > minimumBoundaryOfAPosterioriError)
+
+% then based on the error create the new adapted mesh and calculate the u and the error
+while(aPosterioriError >= minimumBoundaryOfAPosterioriError)
     indecesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError,...
         errorPerTriangle, percentageOfError);
     [p,e,t] = refinemesh(domainDecomposedGeometryMatrix,p,e,t,indecesOfTrianglesThatNeedRefinement);
