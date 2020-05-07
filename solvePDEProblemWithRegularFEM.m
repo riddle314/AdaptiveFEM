@@ -18,7 +18,7 @@ aPosterioriError
 minimumBoundaryOfAPosterioriError = 0.8;
 
 % then refine mesh and calculate the problem and aPosterioriError again until the aPosterioriError becomes lower than minimumBoundaryOfAPosterioriError
-while(aPosterioriError >= minimumBoundaryOfAPosterioriError)
+while(aPosterioriError > minimumBoundaryOfAPosterioriError)
     [p,e,t] = refinemesh(domainDecomposedGeometryMatrix,p,e,t);
     [node, elem] = extractNodeAndElements(p,t);
     bdFlag = readBoundaryConditionsBasedOnOurDomainRefinement(node,elem);
