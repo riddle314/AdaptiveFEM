@@ -12,9 +12,9 @@ numberOfRows = size(sortedErrorAndIndexInfoPerTriangle(:,1),1);
 for i = 1 : numberOfRows
     errorSum =  errorSum + sortedErrorAndIndexInfoPerTriangle(i,2);
     if errorSum >= boundary
-        lastIndex = i;
         break;
     end
 end
+lastIndex = i;
 indecesOfTrianglesThatNeedRefinement  = sortedErrorAndIndexInfoPerTriangle(1:lastIndex,1);
 end
