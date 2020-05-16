@@ -104,10 +104,7 @@ if (numberOfTimesTheProblemCalculated < prelocationNumber)
     dataOfNumOfElemAndErrors = dataOfNumOfElemAndErrors(1 : numberOfTimesTheProblemCalculated,:);
 end
 
-endTime = posixtime(datetime('now'));
-timeOfComputation = endTime - startTime
-
-% ---- second part of figure creation ----
+% ---- second part of figure creation and saving----
 subplot(2,3,3)
 pdemesh(p,e,t)
 title('Final mesh')
@@ -127,15 +124,22 @@ title('log-log plot')
 
 if(modeOfMethod == ADAPTIVE_FEM)
     titleLine1 = 'Adaptive FEM';
-    titleLine2 = ['percentageOfError: ', num2str(percentageOfError),', minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
+    titleLine2 = ['percentageOfError: ', num2str(percentageOfError),...
+    ', minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
     sgtitle({titleLine1,titleLine2})
+    filename = ['Adaptive_FEM_percentageOfError_', num2str(percentageOfError),...
+     '_minimumBoundaryOfAPosterioriError_', num2str(minimumBoundaryOfAPosterioriError),'.jpg'];
 else
     titleLine1 = 'Regular FEM';
     titleLine2 = ['minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
     sgtitle({titleLine1,titleLine2})
+    filename = ['Regular_FEM_minimumBoundaryOfAPosterioriError_', num2str(minimumBoundaryOfAPosterioriError),'.jpg'];
 end
-% ---- end of second part of figure creation ----
+saveas(gcf, filename)
+% ---- end of second part of figure creation and saving----
 
+endTime = posixtime(datetime('now'));
+timeOfComputation = endTime - startTime
 end
 
 % a function that match a subdomain in each triangle in the triangle Matrix

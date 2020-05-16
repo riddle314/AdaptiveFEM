@@ -1,10 +1,14 @@
+
+startTime = posixtime(datetime('now'));
+
 ADAPTIVE_FEM = 1;
 REGULAR_FEM = 2;
 
 initialNumberOfMeshRefinements = 1;
 minimumBoundaryOfAPosterioriError = 0.8;
 
-figureName = ['Log-Log plots for minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
+figureName = ['Log-Log plots for minimumBoundaryOfAPosterioriError: ',...
+    num2str(minimumBoundaryOfAPosterioriError)];
 figureOfLogLogPlots = figure('Name',figureName,'NumberTitle','off');
 
 step = 0.1;
@@ -42,3 +46,8 @@ grid on
 xlabel('number of nodes')
 ylabel('aPosterioriError')
 title('Regular FEM')
+filename = ['log_log_plots_minimumBoundaryOfAPosterioriError_', num2str(minimumBoundaryOfAPosterioriError),'.fig'];
+saveas(figureOfLogLogPlots,filename)
+
+endTime = posixtime(datetime('now'));
+totalTimeOfComputation = endTime - startTime
