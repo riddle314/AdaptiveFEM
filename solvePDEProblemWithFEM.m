@@ -1,23 +1,45 @@
 % Solve the PDE with an adaptive or regular Finite Element Method.
 %
-% Take as parameters 4 values:
+% Take as parameters 5 values:
 % - initialNumberOfMeshRefinements (a integer number) the initial number of
 % mesh refinements
 % - minimumBoundaryOfAPosterioriError (a double number) is the minimum error we want to achieve
 % - modeOfMethod if is 1 run as ADAPTIVE FEM else for any other input run as REGULAR FEM
-% - percentageOfError (a double number) is the percentage of the general error (aPosterioriError)
+% - percentageOfErrorMinBound (a double number) is the minimum percentage of
+% the general error (aPosterioriError) we may take,
 % for which we will try to find the triangles with the biggest errors (errorPerTriangle)
 % that form it and we will refine them in order to shrink the general error (aPosterioriError)
+% - isPercentageOfErrorAdaptive where enables or disable the
+% PercentageOfError to be adaptive based on percentageOfErrorMinBound
 %
-% returns 5 variables:
+% returns 6 variables:
 % - dataOfNumOfElemAndErrors the data for each computation of the number of nodes and the aPostaerioriError,
 % the last element of that matrix has the final number of triangles of the mesh and the final aPostaerioriError
 % - p, e, t the mesh data where: p is Point Matrix, e is Edge Matrix, t is Triangle Matrix
 % - u the values of our solution per node / point we have
-function [dataOfNumOfElemAndErrors, p, e, t, u] = solvePDEProblemWithFEM(initialNumberOfMeshRefinements, minimumBoundaryOfAPosterioriError, modeOfMethod, percentageOfError)
+% - timeOfComputation
+function [dataOfNumOfElemAndErrors, p, e, t, u, timeOfComputation] = solvePDEProblemWithFEM(initialNumberOfMeshRefinements, minimumBoundaryOfAPosterioriError, modeOfMethod, percentageOfErrorMinBound, isPercentageOfErrorAdaptive)
 startTime = posixtime(datetime('now'));
+
+% The modes of FEM
 ADAPTIVE_FEM = 1;
 REGULAR_FEM = 2;
+
+% Constant strings for naming
+PERCENTAGE_OF_ERROR_MIN_BOUND = 'percentageOfErrorMinBound';
+PERCENTAGE_OF_ERROR = 'percentageOfError';
+MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR = 'minimumBoundaryOfAPosterioriError';
+ADAPTIVE_FEM_TITLE = 'Adaptive FEM';
+REGULAR_FEM_TITLE = 'Regular FEM';
+ADAPTIVE_FEM_TITLE_WITH_DASH = 'Adaptive_FEM';
+REGULAR_FEM_TITLE_WITH_DASH = 'Regular_FEM';
+DASH = '_';
+COLON = ': ';
+COMMA = ', ';
+LEFT_SLASH = '\';
+JPG_TYPE = '.jpg';
+FIG_TYPE = '.fig';
+FOLDER_NAME = 'results';
 
 % check the input arguments and give default values if we don't give input
 % for some values
@@ -29,13 +51,27 @@ if nargin < 3
         minimumBoundaryOfAPosterioriError = 0.5;
     end
     modeOfMethod = REGULAR_FEM;
+    percentageOfErrorMinBound = 1;
+    isPercentageOfErrorAdaptive = false;
 else
-    if modeOfMethod ~= ADAPTIVE_FEM
+    if modeOfMethod == ADAPTIVE_FEM
+        if nargin == 3
+            percentageOfErrorMinBound = 0.5;
+            isPercentageOfErrorAdaptive = false;
+        elseif nargin == 4
+            isPercentageOfErrorAdaptive = false;
+        end
+    else
         modeOfMethod = REGULAR_FEM;
+        percentageOfErrorMinBound = 1;
+        isPercentageOfErrorAdaptive = false;
     end
-    if(nargin == 3)
-        percentageOfError = 0.5;
-    end
+end
+
+% if the percentage of error is adaptive set up a string
+percentageOfErrorTypeString = PERCENTAGE_OF_ERROR;
+if isPercentageOfErrorAdaptive
+    percentageOfErrorTypeString = PERCENTAGE_OF_ERROR_MIN_BOUND;
 end
 
 % Start with the computation of the initial mesh, the solution u and the
@@ -49,9 +85,9 @@ end
 
 % ---- first part of figure creation ----
 if(modeOfMethod == ADAPTIVE_FEM)
-    figureName = ['Adaptive FEM: percentageOfError =', num2str(percentageOfError)];
+    figureName = [ADAPTIVE_FEM_TITLE, COLON, percentageOfErrorTypeString, COLON, num2str(percentageOfErrorMinBound)];
 else
-    figureName = 'Regular FEM';
+    figureName = REGULAR_FEM_TITLE;
 end
 figure('Name',figureName,'NumberTitle','off')
 subplot(2,3,1)
@@ -79,10 +115,11 @@ dataOfNumOfElemAndErrors(numberOfTimesTheProblemCalculated,:) = [size(node,1), a
 % then based on the error create the new adapted mesh and calculate the u and the error
 while(aPosterioriError > minimumBoundaryOfAPosterioriError)
     if (modeOfMethod == ADAPTIVE_FEM)
-        indecesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError,...
+        percentageOfError = getPercentageOfError(percentageOfErrorMinBound, aPosterioriError, minimumBoundaryOfAPosterioriError, isPercentageOfErrorAdaptive);
+        indicesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError,...
             errorPerTriangle, percentageOfError);
         % here each subdomain match a triangle that need refinement
-        subdomainsOfTrianglesThatNeedRefinement = indecesOfTrianglesThatNeedRefinement';
+        subdomainsOfTrianglesThatNeedRefinement = indicesOfTrianglesThatNeedRefinement';
         [p,e,t] = refinemesh(domainDecomposedGeometryMatrix,p,e,t,subdomainsOfTrianglesThatNeedRefinement);
         % match a subdomain in each triangle
         t = matchEachTriangleWithASubdomainInTriangleMatrix(t);
@@ -104,7 +141,13 @@ if (numberOfTimesTheProblemCalculated < prelocationNumber)
     dataOfNumOfElemAndErrors = dataOfNumOfElemAndErrors(1 : numberOfTimesTheProblemCalculated,:);
 end
 
-% ---- second part of figure creation and saving----
+% I end here the calculation of computation time because after we create more figures
+% and folders to save them, I don't want that to account for computation
+% time
+endTime = posixtime(datetime('now'));
+timeOfComputation = endTime - startTime
+
+% ---- second part of figure creation and saving ----
 subplot(2,3,3)
 pdemesh(p,e,t)
 title('Final mesh')
@@ -122,24 +165,30 @@ xlabel('number of nodes')
 ylabel('aPosterioriError')
 title('log-log plot')
 
-if(modeOfMethod == ADAPTIVE_FEM)
-    titleLine1 = 'Adaptive FEM';
-    titleLine2 = ['percentageOfError: ', num2str(percentageOfError),...
-    ', minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
-    sgtitle({titleLine1,titleLine2})
-    filename = ['Adaptive_FEM_percentageOfError_', num2str(percentageOfError),...
-     '_minimumBoundaryOfAPosterioriError_', num2str(minimumBoundaryOfAPosterioriError),'.jpg'];
-else
-    titleLine1 = 'Regular FEM';
-    titleLine2 = ['minimumBoundaryOfAPosterioriError: ', num2str(minimumBoundaryOfAPosterioriError)];
-    sgtitle({titleLine1,titleLine2})
-    filename = ['Regular_FEM_minimumBoundaryOfAPosterioriError_', num2str(minimumBoundaryOfAPosterioriError),'.jpg'];
-end
-saveas(gcf, filename)
-% ---- end of second part of figure creation and saving----
+% create the folder to save results
+folderName = [FOLDER_NAME, LEFT_SLASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError)];
+mkdir(folderName)
+folderPath = [pwd, LEFT_SLASH, folderName, LEFT_SLASH];
 
-endTime = posixtime(datetime('now'));
-timeOfComputation = endTime - startTime
+if(modeOfMethod == ADAPTIVE_FEM)
+    titleLine1 = ADAPTIVE_FEM_TITLE;
+    titleLine2 = [percentageOfErrorTypeString, COLON, num2str(percentageOfErrorMinBound),...
+        COMMA, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, COLON, num2str(minimumBoundaryOfAPosterioriError)];
+    sgtitle({titleLine1, titleLine2})
+    filename1 = [folderPath, ADAPTIVE_FEM_TITLE_WITH_DASH, DASH, percentageOfErrorTypeString, DASH, num2str(percentageOfErrorMinBound),...
+        DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), JPG_TYPE];
+    filename2 = [folderPath, ADAPTIVE_FEM_TITLE_WITH_DASH, DASH, percentageOfErrorTypeString, DASH, num2str(percentageOfErrorMinBound),...
+        DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), FIG_TYPE];
+else
+    titleLine1 = REGULAR_FEM_TITLE;
+    titleLine2 = [MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, COLON, num2str(minimumBoundaryOfAPosterioriError)];
+    sgtitle({titleLine1, titleLine2})
+    filename1 = [folderPath, REGULAR_FEM_TITLE_WITH_DASH, DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), JPG_TYPE];
+    filename2 = [folderPath, REGULAR_FEM_TITLE_WITH_DASH, DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), FIG_TYPE];
+end
+saveas(gcf, filename1)
+saveas(gcf, filename2)
+
 end
 
 % a function that match a subdomain in each triangle in the triangle Matrix
@@ -151,5 +200,14 @@ if(numberOfRows == 4)
 end
 end
 
-
-
+% get the percentage of error, if isPercentageOfErrorAdaptive is true it can change per refinement adaptively
+function percentageOfError = getPercentageOfError(percentageOfErrorMinBound, aPosterioriError, minimumBoundaryOfAPosterioriError, isPercentageOfErrorAdaptive)
+if isPercentageOfErrorAdaptive
+    percentageOfError = (aPosterioriError-minimumBoundaryOfAPosterioriError)/aPosterioriError;
+    if percentageOfError < percentageOfErrorMinBound
+        percentageOfError = percentageOfErrorMinBound;
+    end
+else
+    percentageOfError = percentageOfErrorMinBound;
+end
+end

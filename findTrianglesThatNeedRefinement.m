@@ -1,7 +1,7 @@
 % Find the indeces for the triangles that need mesh refinement based on the
 % aPosterioriError, errorPerTriangle and the percentageOfError that defines
 % our error boundary
-function indecesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError, errorPerTriangle, percentageOfError)
+function indicesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError, errorPerTriangle, percentageOfError)
 [x,idx] = sort(errorPerTriangle(:,1), 'descend');
 sortedErrorAndIndexInfoPerTriangle = [idx , x];
 
@@ -16,5 +16,5 @@ for i = 1 : numberOfRows
     end
 end
 lastIndex = i;
-indecesOfTrianglesThatNeedRefinement  = sortedErrorAndIndexInfoPerTriangle(1:lastIndex,1);
+indicesOfTrianglesThatNeedRefinement  = sortedErrorAndIndexInfoPerTriangle(1:lastIndex,1);
 end
