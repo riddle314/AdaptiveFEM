@@ -10,7 +10,7 @@
 % for which we will try to find the triangles with the biggest errors (errorPerTriangle)
 % that form it and we will refine them in order to shrink the general error (aPosterioriError)
 % - isPercentageOfErrorAdaptive where enables or disable the
-% PercentageOfError to be adaptive based on percentageOfErrorMinBound
+% percentageOfError to be adaptive based on percentageOfErrorMinBound
 %
 % returns 6 variables:
 % - dataOfNumOfElemAndErrors the data for each computation of the number of nodes and the aPostaerioriError,
@@ -21,40 +21,20 @@
 function [dataOfNumOfElemAndErrors, p, e, t, u, timeOfComputation] = solvePDEProblemWithFEM(initialNumberOfMeshRefinements, minimumBoundaryOfAPosterioriError, modeOfMethod, percentageOfErrorMinBound, isPercentageOfErrorAdaptive)
 startTime = posixtime(datetime('now'));
 
-% The modes of FEM
-ADAPTIVE_FEM = 1;
-REGULAR_FEM = 2;
-
-% Constant strings for naming
-PERCENTAGE_OF_ERROR_MIN_BOUND = 'percentageOfErrorMinBound';
-PERCENTAGE_OF_ERROR = 'percentageOfError';
-MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR = 'minimumBoundaryOfAPosterioriError';
-ADAPTIVE_FEM_TITLE = 'Adaptive FEM';
-REGULAR_FEM_TITLE = 'Regular FEM';
-ADAPTIVE_FEM_TITLE_WITH_DASH = 'Adaptive_FEM';
-REGULAR_FEM_TITLE_WITH_DASH = 'Regular_FEM';
-DASH = '_';
-COLON = ': ';
-COMMA = ', ';
-LEFT_SLASH = '\';
-JPG_TYPE = '.jpg';
-FIG_TYPE = '.fig';
-FOLDER_NAME = 'results';
-
 % check the input arguments and give default values if we don't give input
 % for some values
 if nargin < 3
     if nargin ==0
         initialNumberOfMeshRefinements = 1;
-        minimumBoundaryOfAPosterioriError = 0.5;
+        minimumBoundaryOfAPosterioriError = 0.6;
     elseif nargin == 1
         minimumBoundaryOfAPosterioriError = 0.5;
     end
-    modeOfMethod = REGULAR_FEM;
+    modeOfMethod = Constants.REGULAR_FEM;
     percentageOfErrorMinBound = 1;
     isPercentageOfErrorAdaptive = false;
 else
-    if modeOfMethod == ADAPTIVE_FEM
+    if modeOfMethod == Constants.ADAPTIVE_FEM
         if nargin == 3
             percentageOfErrorMinBound = 0.5;
             isPercentageOfErrorAdaptive = false;
@@ -62,32 +42,32 @@ else
             isPercentageOfErrorAdaptive = false;
         end
     else
-        modeOfMethod = REGULAR_FEM;
+        modeOfMethod = Constants.REGULAR_FEM;
         percentageOfErrorMinBound = 1;
         isPercentageOfErrorAdaptive = false;
     end
 end
 
-% if the percentage of error is adaptive set up a string
-percentageOfErrorTypeString = PERCENTAGE_OF_ERROR;
+% setup the percentage of error type string based on if the percentage of error is adaptive
+percentageOfErrorTypeString = Constants.PERCENTAGE_OF_ERROR;
 if isPercentageOfErrorAdaptive
-    percentageOfErrorTypeString = PERCENTAGE_OF_ERROR_MIN_BOUND;
+    percentageOfErrorTypeString = Constants.PERCENTAGE_OF_ERROR_MIN_BOUND;
 end
 
 % Start with the computation of the initial mesh, the solution u and the
 % error.
 [node, elem, bdFlag, p, e, t, domainDecomposedGeometryMatrix] = readInitialMeshDataAndBoundaryConditions(initialNumberOfMeshRefinements);
-if (modeOfMethod == ADAPTIVE_FEM)
+if (modeOfMethod == Constants.ADAPTIVE_FEM) 
     % match a subdomain in each triangle
     t = matchEachTriangleWithASubdomainInTriangleMatrix(t);
 end
 [A, u, b, areaForAllElements, f] = solvePDE(node, elem, bdFlag);
 
 % ---- first part of figure creation ----
-if(modeOfMethod == ADAPTIVE_FEM)
-    figureName = [ADAPTIVE_FEM_TITLE, COLON, percentageOfErrorTypeString, COLON, num2str(percentageOfErrorMinBound)];
+if (modeOfMethod == Constants.ADAPTIVE_FEM)
+    figureName = [Constants.ADAPTIVE_FEM_TITLE, Constants.COLON, percentageOfErrorTypeString, Constants.COLON, num2str(percentageOfErrorMinBound)];
 else
-    figureName = REGULAR_FEM_TITLE;
+    figureName = Constants.REGULAR_FEM_TITLE;
 end
 figure('Name',figureName,'NumberTitle','off')
 subplot(2,3,1)
@@ -113,8 +93,8 @@ numberOfTimesTheProblemCalculated = 1;
 dataOfNumOfElemAndErrors(numberOfTimesTheProblemCalculated,:) = [size(node,1), aPosterioriError];
 
 % then based on the error create the new adapted mesh and calculate the u and the error
-while(aPosterioriError > minimumBoundaryOfAPosterioriError)
-    if (modeOfMethod == ADAPTIVE_FEM)
+while (aPosterioriError > minimumBoundaryOfAPosterioriError)
+    if (modeOfMethod == Constants.ADAPTIVE_FEM)
         percentageOfError = getPercentageOfError(percentageOfErrorMinBound, aPosterioriError, minimumBoundaryOfAPosterioriError, isPercentageOfErrorAdaptive);
         indicesOfTrianglesThatNeedRefinement = findTrianglesThatNeedRefinement(aPosterioriError,...
             errorPerTriangle, percentageOfError);
@@ -145,7 +125,7 @@ end
 % and folders to save them, I don't want that to account for computation
 % time
 endTime = posixtime(datetime('now'));
-timeOfComputation = endTime - startTime
+timeOfComputation = endTime - startTime;
 
 % ---- second part of figure creation and saving ----
 subplot(2,3,3)
@@ -166,28 +146,27 @@ ylabel('aPosterioriError')
 title('log-log plot')
 
 % create the folder to save results
-folderName = [FOLDER_NAME, LEFT_SLASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError)];
-mkdir(folderName)
-folderPath = [pwd, LEFT_SLASH, folderName, LEFT_SLASH];
+folderPath = UtilsClass.createFolderPathPerModeOfMethod(minimumBoundaryOfAPosterioriError, modeOfMethod, isPercentageOfErrorAdaptive);
 
-if(modeOfMethod == ADAPTIVE_FEM)
-    titleLine1 = ADAPTIVE_FEM_TITLE;
-    titleLine2 = [percentageOfErrorTypeString, COLON, num2str(percentageOfErrorMinBound),...
-        COMMA, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, COLON, num2str(minimumBoundaryOfAPosterioriError)];
+if(modeOfMethod == Constants.ADAPTIVE_FEM)
+    titleLine1 = Constants.ADAPTIVE_FEM_TITLE;
+    titleLine2 = [percentageOfErrorTypeString, Constants.COLON, num2str(percentageOfErrorMinBound),...
+    Constants.COMMA, Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.COLON, num2str(minimumBoundaryOfAPosterioriError)];
     sgtitle({titleLine1, titleLine2})
-    filename1 = [folderPath, ADAPTIVE_FEM_TITLE_WITH_DASH, DASH, percentageOfErrorTypeString, DASH, num2str(percentageOfErrorMinBound),...
-        DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), JPG_TYPE];
-    filename2 = [folderPath, ADAPTIVE_FEM_TITLE_WITH_DASH, DASH, percentageOfErrorTypeString, DASH, num2str(percentageOfErrorMinBound),...
-        DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), FIG_TYPE];
+    filename1 = [folderPath, Constants.ADAPTIVE_FEM_TITLE_WITH_DASH, Constants.DASH, percentageOfErrorTypeString, Constants.DASH, num2str(percentageOfErrorMinBound),...
+    Constants.DASH, Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.DASH, num2str(minimumBoundaryOfAPosterioriError), Constants.JPG_TYPE];
+    filename2 = [folderPath, Constants.ADAPTIVE_FEM_TITLE_WITH_DASH, Constants.DASH, percentageOfErrorTypeString, Constants.DASH, num2str(percentageOfErrorMinBound),...
+    Constants.DASH, Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.DASH, num2str(minimumBoundaryOfAPosterioriError), Constants.FIG_TYPE];
 else
-    titleLine1 = REGULAR_FEM_TITLE;
-    titleLine2 = [MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, COLON, num2str(minimumBoundaryOfAPosterioriError)];
+    titleLine1 = Constants.REGULAR_FEM_TITLE;
+    titleLine2 = [Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.COLON, num2str(minimumBoundaryOfAPosterioriError)];
     sgtitle({titleLine1, titleLine2})
-    filename1 = [folderPath, REGULAR_FEM_TITLE_WITH_DASH, DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), JPG_TYPE];
-    filename2 = [folderPath, REGULAR_FEM_TITLE_WITH_DASH, DASH, MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, DASH, num2str(minimumBoundaryOfAPosterioriError), FIG_TYPE];
+    filename1 = [folderPath, Constants.REGULAR_FEM_TITLE_WITH_DASH, Constants.DASH, Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.DASH, num2str(minimumBoundaryOfAPosterioriError), Constants.JPG_TYPE];
+    filename2 = [folderPath, Constants.REGULAR_FEM_TITLE_WITH_DASH, Constants.DASH, Constants.MINIMUM_BOUNDARY_OF_A_POSTERIORI_ERROR, Constants.DASH, num2str(minimumBoundaryOfAPosterioriError), Constants.FIG_TYPE];
 end
 saveas(gcf, filename1)
 saveas(gcf, filename2)
+close(gcf)
 
 end
 
