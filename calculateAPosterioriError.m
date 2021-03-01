@@ -41,7 +41,7 @@ end
 et = partA + partB;
 end
 
-%Calculate N x N matrix with the integrals of Vu for each edge, this matrix
+%Calculate N x N matrix with the sort of integrals of [Vu]_e for each edge, this matrix
 %will be sparse and each (i,j) is an edge and jumpOfGradsOnEdges(i,j) give
 %us the value on that edge.
 function jumpOfGradsOnEdges = calculateMatrixOfJumpsPerEdge(node, elem, u)
@@ -157,7 +157,7 @@ lengthGQ = norm(GQ);
 %lengthGP = sqrt(sum(GP.^2));
 lengthGP = norm(GP);
 
-if lengthGQ < lengthGP
+if lengthGQ > lengthGP
     n = Q-M;
 else
     n = P-M;
